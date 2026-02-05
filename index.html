@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>红发会：侦探演绎模拟器</title>
+    <style>
+        /* 1. 全局锁定：严禁滚动 */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background-color: #1a1512; color: #d1c4b1; 
+            font-family: "Georgia", "Times New Roman", "SimSun", serif; 
+            margin: 0; padding: 0; height: 100vh; width: 100vw;
+            display: flex; justify-content: center; align-items: center; overflow: hidden; 
+        }
+
+        /* 主容器 */
+        #game-container { 
+            width: 95%; max-width: 850px; height: 96vh;
+            border: 3px solid #5d4037; background-color: #2c241e; 
+            display: flex; flex-direction: column; padding: 15px; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.9);
+        }
+
+        h1 { font-size: 1.4rem; color: #ffd700; text-align: center; margin: 0 0 8px 0; border-bottom: 2px solid #5d4037; padding-bottom: 8px; letter-spacing: 3px; flex-shrink: 0; }
+        .status-bar { display: flex; justify-content: space-between; font-size: 0.75rem; color: #8d6e63; margin-bottom: 10px; flex-shrink: 0; }
+
+        /* 内容区布局 */
+        #content-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; justify-content: center; }
+        
+        /* --- 新增：场景图片容器 --- */
+        #scene-image-container {
+            flex: 1; /* 占据剩余空间，但允许被压缩 */
+            min-height: 0; /* 关键：允许flex子项小于内容高度 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+            background: #000;
+            border: 2px solid #3d3329;
+            overflow: hidden;
+        }
+
+        #scene-img {
+            max-width: 100%;
+            max-height: 100%; /* 确保图片适应容器，不撑破 */
+            object-fit: contain; 
+        }
+        /* ----------------------- */
+
+        .text-panel { 
+            background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #3d3329; 
+            line-height: 1.6; margin-bottom: 15px; font-size: 1rem; color: #eaddca;
+            overflow-y: auto; /* 如果文字太多，允许框内滚动 */
+            max-height: 40vh; /* 限制文字框最大高度，给图片留空间 */
+            flex-shrink: 0; /* 防止文字框被压得太扁 */
+        }
+
+        .choices-grid { display: grid; grid-template-columns: 1fr; gap: 8px; flex-shrink: 0; }
+        button { 
+            background: #3d3329; color: #d1c4b1; border: 1px solid #5d4037; 
+            padding: 10px 8px; cursor: pointer; font-size: 0.9rem; 
+            transition: 0.2s; font-family: inherit;
+        }
+        button:hover:not(:disabled) { background: #5d4037; color: #ffd700; border-color: #ffd700; }
+
+        /* 结案页与漫画页 */
+        #result-page { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; }
+        .rank-title { font-size: 1.8rem; color: #ffd700; margin-bottom: 15px; }
+        .final-score { font-size: 1.1rem; margin-bottom: 20px; color: #8d6e63; }
+        .comic-btn { background: #5d4037; border-color: #ffd700; color: #ffd700; font-weight: bold; }
+
+        @media (min-width: 600px) {
+            .choices-grid { grid-template-columns: 1fr 1fr 1fr; }
+            h1 { font-size: 1.8rem; }
+            .text-panel { font-size: 1.1rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <h1 id="main-title">红发会</h1>
+    
+    <div class="status-bar" id="stats">
+        <span>侦探：夏洛克·福尔摩斯</span>
+        <span id="score-display">演绎值: 0 / 100</span>
+    </div>
+
+    <div id="content-wrapper">
+        <div id="logic-zone" style="display: flex; flex-direction: column; height: 100%;">
+            
+            <div id="scene-image-container">
+                <img id="scene-img" src="节点1.jpg" alt="案发现场">
+            </div>
+
+            <div class="text-panel" id="desc">
+                福尔摩斯划着一根火柴点燃烟斗。面前的杰贝兹·威尔逊正在讲述那个怪诞的“红发会”招工经历。福尔摩斯必须从这些叙述中提取出常人无法察觉的真相。
+            </div>
+            <div id="choices" class="choices-grid">
+                <button onclick="play(1, 'A')">观察威尔逊右手肌肉与袖口磨损</button>
+                <button onclick="play(1, 'B')">礼貌倾听，并安慰其焦虑情绪</button>
+                <button onclick="play(1, 'C')">询问红发会报纸广告的具体日期</button>
+            </div>
+        </div>
+
+        <div id="result-page">
+            <div class="rank-title" id="rank-name">演绎等级</div>
+            <div class="final-score" id="final-score-val">最终得分：0</div>
+            <div class="text-panel" id="result-desc" style="width: 100%; text-align: left; font-size: 0.9rem; max-height: none;"></div>
+            <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 300px;">
+                <button class="comic-btn" onclick="openXhs()">查阅结案漫画彩蛋</button>
+                <button onclick="location.reload()">重新演绎案件</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let score = 0;
+
+    const story = {
+        1: {
+            A: { txt: "“威尔逊先生，你曾从事重体力劳动，且近期大量抄写。”福尔摩斯吐出一口烟，对方惊愕的表情印证了判断的准确。他立刻盯上了那位“低薪聘用”的助手斯波尔丁。", next: 2, pts: 25 },
+            B: { txt: "威尔逊的情绪平复了，但福尔摩斯错过了一个通过观察直接震撼对方的机会。他掌握了基本框架，但助手斯波尔丁的形象依然模糊。", next: 2, pts: 10 },
+            C: { txt: "日期虽有意义，但在这种奇怪的案件中，人的特征比日期更重要。福尔摩斯在笔记上记下了日期，但仍需寻找更有力的物理证据。", next: 2, pts: 5 }
+        },
+        2: {
+            A: { txt: "福尔摩斯来到广场，用手杖敲击铺路石，回声坚实；随后他看到助手走出，膝盖处的磨损极其严重且沾满新鲜泥垢。真相就在地下！", next: 3, pts: 25 },
+            B: { txt: "福尔摩斯走访了邻居，得知助手是个勤快的人，经常钻进地下室。他推断地下室有蹊跷，但缺乏对物理空间的直接确信。", next: 3, pts: 10 },
+            C: { txt: "福尔摩斯盯着当铺招牌看了许久。虽然他察觉到了异常，但由于没有检查地面和助手的裤子，他无法断定挖掘的具体位置。", next: 3, pts: 5 }
+        },
+        3: {
+            A: { txt: "周六深夜，福尔摩斯潜入银行金库。在黑暗中，他听到了石块移动的轻响。他意识到红发会只是为了支开当铺老板，目标是这里的黄金。", next: 4, pts: 25 },
+            B: { txt: "福尔摩斯守在当铺后巷。虽然也能听到挖掘声，但在这个位置他无法阻止罪犯进入金库。他必须在最后时刻赶往银行拦截。", next: 4, pts: 10 },
+            C: { txt: "福尔摩斯守在红发会办公室。那里整晚毫无动静。直到清晨他才醒悟，由于对地理位置的判断偏差，他守错了目标。", next: 4, pts: 0 }
+        },
+        4: {
+            A: { txt: "地板被凿穿，约翰·克莱现身。福尔摩斯猛地跳出，用枪指向对方眉心。罪犯脸上写满绝望，黄金保住了。案件完美告破！", next: 'finish', pts: 25 },
+            B: { txt: "福尔摩斯等罪犯完全爬出地洞再围捕。这导致现场发生了一场混战。虽然最终制服了罪犯，但这一举动并不完美。", next: 'finish', pts: 15 },
+            C: { txt: "福尔摩斯试图鸣枪示警，但这给了克莱利用地道逃跑的机会。虽然阻止了劫案，但首犯未能当场落网。", next: 'finish', pts: 5 }
+        }
+    };
+
+    function play(nodeId, opt) {
+        const node = story[nodeId][opt];
+        score += node.pts;
+        document.getElementById('score-display').innerText = `演绎值: ${score} / 100`;
+
+        if (node.next === 'finish') {
+            showResult();
+        } else {
+            // 更新文本
+            document.getElementById('desc').innerHTML = `<b>福尔摩斯的推断：</b><br>${node.txt}`;
+            // 更新图片：根据下一个节点的ID加载对应的图片
+            document.getElementById('scene-img').src = `节点${node.next}.jpg`;
+            // 更新按钮
+            updateButtons(node.next);
+        }
+    }
+
+    function updateButtons(nextId) {
+        const zone = document.getElementById('choices');
+        if (nextId === 2) {
+            zone.innerHTML = `
+                <button onclick="play(2, 'A')">敲击路面并观察助手膝盖</button>
+                <button onclick="play(2, 'B')">走访邻居询问助手的评价</button>
+                <button onclick="play(2, 'C')">研究当铺招牌与周边建筑</button>`;
+        } else if (nextId === 3) {
+            zone.innerHTML = `
+                <button onclick="play(3, 'A')">潜入银行金库实施伏击</button>
+                <button onclick="play(3, 'B')">在当铺后巷进行秘密监视</button>
+                <button onclick="play(3, 'C')">在红发会办公室旧址守候</button>`;
+        } else if (nextId === 4) {
+            zone.innerHTML = `
+                <button onclick="play(4, 'A')">在露头瞬间实施抓捕</button>
+                <button onclick="play(4, 'B')">等其完全爬出地道围捕</button>
+                <button onclick="play(4, 'C')">鸣枪示警迫使其投降</button>`;
+        }
+    }
+
+    function showResult() {
+        document.getElementById('logic-zone').style.display = 'none';
+        const resPage = document.getElementById('result-page');
+        resPage.style.display = 'flex';
+        document.getElementById('final-score-val').innerText = `最终得分：${score} / 100`;
+
+        if (score >= 100) {
+            document.getElementById('rank-name').innerText = "贝克街之魂";
+            document.getElementById('result-desc').innerHTML = "“完美，华生！”福尔摩斯总结道，“每一个细节都被精准捕捉。这抓住了伦敦最危险的罪犯。这绝对是你探案集中最精彩的案例之一。”";
+        } else if (score >= 70) {
+            document.getElementById('rank-name').innerText = "称职的侦探";
+            document.getElementById('result-desc').innerHTML = "“案件虽然告破，但我们走了一些弯路。”福尔摩斯沉思道，“在这个行当里，没有微不足道的小事。”";
+        } else {
+            document.getElementById('rank-name').innerText = "苏格兰场水平";
+            document.getElementById('result-desc').innerHTML = "“遗憾，华生。由于我们的迟疑，差点让约翰·克莱逃脱。这是一个值得深刻吸取的教训。”";
+        }
+    }
+
+    function openXhs() {
+        window.open('https://www.xiaohongshu.com/explore/6972e8e90000000022021498?xsec_token=AB8KG7iQP_J9Lts6IMzHJcxPINxcCxUt7a6LCuyH5m0Yo=&xsec_source=pc_user', '_blank');
+    }
+</script>
+</body>
+</html>
