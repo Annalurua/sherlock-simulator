@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>红发会：侦探演绎模拟器</title>
     <style>
-        /* 核心样式：确保滑动流畅且全屏适配 */
+        /* 全局样式：适配移动端并允许滑动 */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             background-color: #1a1512; color: #d1c4b1; 
@@ -46,10 +46,7 @@
             <div id="scene-image-container"><img id="scene-img" src="节点1.jpg" alt="场景加载中..."></div>
             <div class="text-panel" id="desc">福尔摩斯划着一根火柴点燃烟斗。面前的杰贝兹·威尔逊正在讲述那个怪诞的“红发会”招工经历。福尔摩斯必须从这些叙述中提取出常人无法察觉的真相。</div>
             <div id="choices" class="choices-grid">
-                <button onclick="play(1, 'A')">观察威尔逊右手肌肉与袖口磨损</button>
-                <button onclick="play(1, 'B')">耐心地听完叙述，不打断他的思路</button>
-                <button onclick="play(1, 'C')">询问红发会报纸广告的具体日期</button>
-            </div>
+                </div>
         </div>
         <div id="result-page">
             <div class="rank-title" id="rank-name">演绎等级</div>
@@ -67,30 +64,73 @@
         const imageList = ["节点1.jpg", "节点2.jpg", "节点3.jpg", "节点4.jpg"];
         imageList.forEach((src, i) => { preloadedImages[i] = new Image(); preloadedImages[i].src = src; });
     }
+
     const story = {
-        1: { A: { txt: "“威尔逊先生，你曾从事重体力劳动。”福尔摩斯吐出一口烟。他立刻盯上了那位助手斯波尔丁。", next: 2, pts: 25 }, B: { txt: "福尔摩斯掌握了基本框架，但助手斯波尔丁的形象依然模糊。", next: 2, pts: 10 }, C: { txt: "日期虽有意义，但人的特征更重要。福尔摩斯仍需寻找物理证据。", next: 2, pts: 5 } },
-        2: { A: { txt: "福尔摩斯看到助手走出，膝盖处的磨损极其严重且沾满新鲜泥垢。真相就在地下！", next: 3, pts: 25 }, B: { txt: "福尔摩斯得知助手经常钻进地下室。他推断地下室有蹊跷，但缺乏确信。", next: 3, pts: 10 }, C: { txt: "福尔摩斯盯着当铺招牌看了许久。由于没检查地面，他无法断定挖掘位置。", next: 3, pts: 5 } },
-        3: { A: { txt: "在金库的黑暗中，福尔摩斯听到了石块移动的轻响。目标就是这里的黄金。", next: 4, pts: 25 }, B: { txt: "福尔摩斯守在当铺后巷，无法阻止罪犯进入金库。他必须赶往银行。", next: 4, pts: 10 }, C: { txt: "福尔摩斯守在办公室。直到清晨他才醒悟，由于判断偏差，他守错了目标。", next: 4, pts: 0 } },
-        4: { A: { txt: "地板被凿穿，约翰·克莱现身。福尔摩斯猛地跳出，用枪指向对方眉心。案件完美告破！", next: 'finish', pts: 25 }, B: { txt: "福尔摩斯等罪犯完全爬出再围捕。这导致了混战。虽制服了罪犯，但并不完美。", next: 'finish', pts: 15 }, C: { txt: "福尔摩斯试图鸣枪示警，但这给了克莱利用地道逃跑的机会。首犯未能落网。", next: 'finish', pts: 5 } }
+        1: { 
+            A: { txt: "“威尔逊先生，你曾从事重体力劳动。”福尔摩斯吐出一口烟。他立刻盯上了那位助手斯波尔丁。", label: "观察威尔逊右手肌肉与袖口磨损", pts: 25 }, 
+            B: { txt: "福尔摩斯掌握了基本框架，但助手斯波尔丁的形象依然模糊。", label: "耐心地听完叙述，不打断他的思路", pts: 10 }, 
+            C: { txt: "日期虽有意义，但在这种案件中，人的特征更重要。福尔摩斯仍需寻找物理证据。", label: "询问红发会报纸广告的具体日期", pts: 5 } 
+        },
+        2: { 
+            A: { txt: "福尔摩斯看到助手走出，膝盖处的磨损极其严重且沾满新鲜泥垢。真相就在地下！", label: "观察助手膝盖", pts: 25 }, 
+            B: { txt: "福尔摩斯得知助手经常钻进地下室。他推断地下室有蹊跷，但缺乏确信。", label: "走访邻居", pts: 10 }, 
+            C: { txt: "福尔摩斯盯着当铺招牌看了许久。由于没检查地面，他无法断定挖掘位置。", label: "研究招牌", pts: 5 } 
+        },
+        3: { 
+            A: { txt: "在金库的黑暗中，福尔摩斯听到了石块移动的轻响。目标就是这里的黄金。", label: "伏击金库", pts: 25 }, 
+            B: { txt: "福尔摩斯守在当铺后巷，无法阻止罪犯进入金库。他必须赶往银行。", label: "监视后巷", pts: 10 }, 
+            C: { txt: "福尔摩斯守在办公室。直到清晨他才醒悟，由于判断偏差，他守错了目标。", label: "蹲守办公室", pts: 0 } 
+        },
+        4: { 
+            A: { txt: "地板被凿穿，约翰·克莱现身。福尔摩斯猛地跳出，用枪指向对方眉心。案件完美告破！", label: "露头瞬间抓捕", pts: 25 }, 
+            B: { txt: "福尔摩斯等罪犯完全爬出再围捕。这导致了混战。虽制服了罪犯，但并不完美。", label: "爬出后围捕", pts: 15 }, 
+            C: { txt: "福尔摩斯试图鸣枪示警，但这给了克莱利用地道逃跑的机会。首犯未能落网。", label: "鸣枪示警", pts: 5 } 
+        }
     };
+
+    // 初始加载第一个节点的随机按钮
+    window.onload = function() {
+        preloadImages();
+        updateButtons(1);
+    };
+
     function play(nodeId, opt) {
         const node = story[nodeId][opt];
         score += node.pts;
         document.getElementById('score-display').innerText = `演绎值: ${score} / 100`;
-        if (node.next === 'finish') { showResult(); } 
-        else {
+        
+        if (nodeId === 4) { 
+            showResult(); 
+        } else {
             document.getElementById('desc').innerHTML = `<b>福尔摩斯的推断：</b><br>${node.txt}`;
-            document.getElementById('scene-img').src = `节点${node.next}.jpg`;
-            updateButtons(node.next);
+            const nextNode = nodeId + 1;
+            document.getElementById('scene-img').src = `节点${nextNode}.jpg`;
+            updateButtons(nextNode);
             window.scrollTo(0, 0); 
         }
     }
-    function updateButtons(nextId) {
-        const zone = document.getElementById('choices');
-        if (nextId === 2) { zone.innerHTML = `<button onclick="play(2, 'A')">观察助手膝盖</button><button onclick="play(2, 'B')">走访邻居</button><button onclick="play(2, 'C')">研究招牌</button>`; }
-        else if (nextId === 3) { zone.innerHTML = `<button onclick="play(3, 'A')">伏击金库</button><button onclick="play(3, 'B')">监视后巷</button><button onclick="play(3, 'C')">蹲守办公室</button>`; }
-        else if (nextId === 4) { zone.innerHTML = `<button onclick="play(4, 'A')">露头瞬间抓捕</button><button onclick="play(4, 'B')">爬出后围捕</button><button onclick="play(4, 'C')">鸣枪示警</button>`; }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
     }
+
+    function updateButtons(nodeId) {
+        const zone = document.getElementById('choices');
+        const options = ['A', 'B', 'C'];
+        const shuffledOptions = shuffleArray(options);
+        
+        let html = "";
+        shuffledOptions.forEach(opt => {
+            const choiceData = story[nodeId][opt];
+            html += `<button onclick="play(${nodeId}, '${opt}')">${choiceData.label}</button>`;
+        });
+        zone.innerHTML = html;
+    }
+
     function showResult() {
         document.getElementById('logic-zone').style.display = 'none';
         document.getElementById('result-page').style.display = 'flex';
@@ -100,6 +140,7 @@
         else { document.getElementById('rank-name').innerText = "称职的侦探"; desc.innerHTML = "“案件虽然告破，但我们走了一些弯路。”福尔摩斯沉思道，“在这个行当里，没有微不足道的小事。”"; }
         window.scrollTo(0, 0);
     }
+
     function openXhs() { window.open('https://www.xiaohongshu.com/explore/6972e8e90000000022021498?xsec_token=AB8KG7iQP_J9Lts6IMzHJcxPINxcCxUt7a6LCuyH5m0Yo=&xsec_source=pc_user', '_blank'); }
 </script>
 </body>
