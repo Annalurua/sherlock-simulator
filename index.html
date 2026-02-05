@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>红发会：侦探演绎模拟器</title>
     <style>
-        /* 1. 全局布局：允许滑动 */
+        /* 布局与之前保持一致，确保上下滑动与全屏适配 */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             background-color: #1a1512; color: #d1c4b1; 
@@ -16,28 +16,20 @@
             overflow-y: auto; 
         }
 
-        /* 2. 主容器 */
         #game-container { 
-            width: 95%; max-width: 850px; 
-            min-height: 90vh;
+            width: 95%; max-width: 850px; min-height: 90vh;
             border: 3px solid #5d4037; background-color: #2c241e; 
             display: flex; flex-direction: column; padding: 20px; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.9);
-            margin-bottom: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.9); margin-bottom: 20px;
         }
 
         h1 { font-size: 1.6rem; color: #ffd700; text-align: center; margin: 0 0 10px 0; border-bottom: 2px solid #5d4037; padding-bottom: 10px; letter-spacing: 3px; }
         .status-bar { display: flex; justify-content: space-between; font-size: 0.85rem; color: #8d6e63; margin-bottom: 15px; }
 
-        /* 3. 内容区 */
-        #content-wrapper { display: flex; flex-direction: column; }
-        
         #scene-image-container {
-            width: 100%;
-            display: flex; justify-content: center; align-items: center;
+            width: 100%; display: flex; justify-content: center; align-items: center;
             margin-bottom: 20px; background: #000; border: 2px solid #3d3329;
         }
-
         #scene-img { max-width: 100%; height: auto; display: block; }
 
         .text-panel { 
@@ -46,40 +38,22 @@
         }
 
         .choices-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 20px; }
-
         button { 
             background: #3d3329; color: #d1c4b1; border: 1px solid #5d4037; 
-            padding: 15px; cursor: pointer; font-size: 1rem; 
-            transition: 0.2s; font-family: inherit;
+            padding: 15px; cursor: pointer; font-size: 1rem; transition: 0.2s; font-family: inherit;
         }
         button:hover { background: #5d4037; color: #ffd700; border-color: #ffd700; }
 
-        /* 4. 结算页优化：顶部对齐，减少留白 */
-        #result-page { 
-            display: none; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: flex-start; /* 改为顶部对齐 */
-            text-align: center; 
-            padding-top: 0; /* 消除内边距 */
-        }
-        .rank-title { font-size: 2rem; color: #ffd700; margin: 10px 0 5px 0; } /* 紧凑间距 */
+        /* 结算页顶部对齐优化 */
+        #result-page { display: none; flex-direction: column; align-items: center; justify-content: flex-start; text-align: center; }
+        .rank-title { font-size: 2rem; color: #ffd700; margin: 10px 0 5px 0; }
         .final-score { font-size: 1.2rem; margin-bottom: 15px; color: #8d6e63; }
-        
-        .comic-btn { 
-            background: #5d4037; border-color: #ffd700; color: #ffd700; 
-            font-weight: bold; width: 100%; max-width: 300px; 
-            padding: 18px; margin-top: 10px; 
-        }
+        .comic-btn { background: #5d4037; border-color: #ffd700; color: #ffd700; font-weight: bold; width: 100%; max-width: 300px; padding: 18px; margin-top: 10px; }
 
-        @media (min-width: 600px) {
-            .choices-grid { grid-template-columns: 1fr 1fr 1fr; }
-        }
+        @media (min-width: 600px) { .choices-grid { grid-template-columns: 1fr 1fr 1fr; } }
     </style>
 </head>
-<body>
-
-<div id="game-container">
+<body onload="preloadImages()"> <div id="game-container">
     <h1>红发会</h1>
     <div class="status-bar">
         <span>侦探：夏洛克·福尔摩斯</span>
@@ -113,8 +87,21 @@
 
 <script>
     let score = 0;
+    // 预加载图片对象存储
+    const preloadedImages = [];
+
+    // --- 核心修复：预加载函数 ---
+    function preloadImages() {
+        const imageList = ["节点1.jpg", "节点2.jpg", "节点3.jpg", "节点4.jpg"];
+        for (let i = 0; i < imageList.length; i++) {
+            preloadedImages[i] = new Image();
+            preloadedImages[i].src = imageList[i];
+            console.log("预加载完成: " + imageList[i]);
+        }
+    }
+
     const story = {
-        1: { A: { txt: "“威尔逊先生，你曾从事重体力劳动。”福尔摩斯吐出一口烟。他立刻盯上了那位助手斯波尔丁。", next: 2, pts: 25 }, B: { txt: "谈话持续了很久。福尔摩斯虽然掌握了基本情况，但错过了一个直接震慑对方的机会。", next: 2, pts: 10 }, C: { txt: "日期虽有意义，但在这种案件中，人的特征更重要。福尔摩斯仍需寻找物理证据。", next: 2, pts: 5 } },
+        1: { A: { txt: "“威尔逊先生，你曾从事重体力劳动。”福尔摩斯吐出一口烟。他立刻盯上了那位助手斯波尔丁。", next: 2, pts: 25 }, B: { txt: "谈话持续了很久。福尔摩斯虽然掌握了基本情况，但错过了一个直接震撼对方的机会。", next: 2, pts: 10 }, C: { txt: "日期虽有意义，但在这种案件中，人的特征更重要。福尔摩斯仍需寻找物理证据。", next: 2, pts: 5 } },
         2: { A: { txt: "福尔摩斯看到助手走出，膝盖处的磨损极其严重且沾满新鲜泥垢。真相就在地下！", next: 3, pts: 25 }, B: { txt: "福尔摩斯得知助手经常钻进地下室。他推断地下室有蹊跷，但缺乏确信。", next: 3, pts: 10 }, C: { txt: "福尔摩斯盯着当铺招牌看了许久。由于没检查地面，他无法断定挖掘位置。", next: 3, pts: 5 } },
         3: { A: { txt: "在金库的黑暗中，福尔摩斯听到了石块移动的轻响。目标就是这里的黄金。", next: 4, pts: 25 }, B: { txt: "福尔摩斯守在当铺后巷，无法阻止罪犯进入金库。他必须赶往银行。", next: 4, pts: 10 }, C: { txt: "福尔摩斯守在办公室。直到清晨他才醒悟，由于判断偏差，他守错了目标。", next: 4, pts: 0 } },
         4: { A: { txt: "地板被凿穿，约翰·克莱现身。福尔摩斯猛地跳出，用枪指向对方眉心。案件完美告破！", next: 'finish', pts: 25 }, B: { txt: "福尔摩斯等罪犯完全爬出再围捕。这导致了混战。虽制服了罪犯，但并不完美。", next: 'finish', pts: 15 }, C: { txt: "福尔摩斯试图鸣枪示警，但这给了克莱利用地道逃跑的机会。首犯未能落网。", next: 'finish', pts: 5 } }
@@ -129,8 +116,8 @@
             showResult(); 
         } else {
             document.getElementById('desc').innerHTML = `<b>福尔摩斯的推断：</b><br>${node.txt}`;
-            const timestamp = new Date().getTime();
-            document.getElementById('scene-img').src = `节点${node.next}.jpg?v=${timestamp}`;
+            // 更新图片路径（由于已预加载，此处会直接从缓存读取，实现秒开）
+            document.getElementById('scene-img').src = `节点${node.next}.jpg`;
             updateButtons(node.next);
             window.scrollTo(0, 0); 
         }
